@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ZVIERACIE BLUDISKÁ</title>
+<style>
+  :root{
+    --modra:#2456d0; --modra-tmava:#173a8f; --ciara:#ff7a1a; --zelena:#1f9d4d;
+    --panel-h:150px;
+  }
+  @media (max-height:830px){ :root{ --panel-h:128px; } }
+  @media (max-height:700px){ :root{ --panel-h:112px; } }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html{ height:100%; }
+  body{
+    margin:0; height:100%; height:100dvh; overflow:hidden;
+    display:flex; flex-direction:column; background:#fff;
+    font-family:system-ui,'Segoe UI',Roboto,Arial,sans-serif;
+    overscroll-behavior:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+  }
+  header{ flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+          gap:10px 16px; flex-wrap:wrap; padding:8px 16px 2px; }
+  #instr{ font-weight:800; letter-spacing:.5px; color:#1c3f94; font-size:clamp(15px,2.7vmin,25px); }
+  #hright{ display:flex; align-items:center; gap:12px; margin-left:auto; }
+  #counter{ font-weight:700; color:#98a1b3; font-size:clamp(11px,1.9vmin,16px); white-space:nowrap; }
+  #fsBtn{ font:inherit; font-weight:700; font-size:clamp(10px,1.6vmin,13px); color:#6b7686;
+          background:#fff; border:2px solid #d4dae4; border-radius:999px; padding:5px 12px;
+          cursor:pointer; touch-action:manipulation; white-space:nowrap; }
+  #fsBtn:active{ background:#eef1f6; }
+  #stage{ flex:1 1 auto; min-height:0; min-width:0; display:flex; align-items:center;
+          justify-content:center; padding:2px 10px 4px; }
+  #board{ width:100%; height:100%; display:block; touch-action:none; cursor:pointer; }
+  #panel{ flex:0 0 auto; height:var(--panel-h); display:flex; flex-direction:column;
+          align-items:center; justify-content:center; gap:8px; padding:4px 16px 10px; text-align:center; }
+  #hint{ color:#9aa3b2; font-weight:600; font-size:clamp(13px,2.2vmin,19px); }
+  #winBox{ display:flex; align-items:center; justify-content:center; gap:16px; animation:pop .35s ease; }
+  #winBox[hidden]{ display:none !important; }
+  #winBox svg{ width:clamp(42px,7vh,72px); height:clamp(42px,7vh,72px); flex:0 0 auto; }
+  #winText{ color:var(--zelena); font-weight:800; letter-spacing:.5px; font-size:clamp(20px,4.2vmin,36px); }
+  #winText.final{ font-size:clamp(15px,3.1vmin,26px); }
+  @keyframes pop{ from{ transform:scale(.4); opacity:0; } }
+  #nextBtn{ font:inherit; font-weight:800; color:#fff; background:var(--modra); border:none;
+            border-radius:999px; min-height:56px; padding:8px 38px; cursor:pointer;
+            touch-action:manipulation; letter-spacing:.5px; font-size:clamp(17px,2.6vmin,25px);
+            box-shadow:0 4px 0 var(--modra-tmava); }
+  #nextBtn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--modra-tmava); }
+  #nextBtn[hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div id="instr">POMÔŽ ZVIERATKU NÁJSŤ CESTU.</div>
+  <div id="hright">
+    <div id="counter">BLUDISKO 1/10</div>
+    <button id="fsBtn" type="button">CELÁ OBRAZOVKA</button>
+  </div>
+</header>
+
+<main id="stage">
+  <svg id="board" viewBox="0 0 17 17" preserveAspectRatio="xMidYMid meet" aria-label="Bludisko">
+    <defs>
+
+      <g id="s-ant">
+        <g stroke="#3f3a34" stroke-width="4" stroke-linecap="round" fill="none">
+          <path d="M40 64 L27 85"/><path d="M52 66 L50 90"/><path d="M62 62 L72 85"/><path d="M36 58 L20 76"/>
+        </g>
+        <g stroke="#3f3a34" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="70" cy="52" rx="19" ry="15" fill="#8a5a3b"/>
+          <ellipse cx="46" cy="55" rx="13" ry="11" fill="#8a5a3b"/>
+          <circle cx="25" cy="47" r="14" fill="#8a5a3b"/>
+          <path d="M17 36 Q9 25 3 23" fill="none"/>
+          <path d="M28 33 Q28 19 20 11" fill="none"/>
+        </g>
+        <circle cx="3" cy="23" r="3.2" fill="#3f3a34"/><circle cx="20" cy="11" r="3.2" fill="#3f3a34"/>
+        <circle cx="20" cy="44" r="4.5" fill="#fff"/><circle cx="21" cy="45" r="2" fill="#3f3a34"/>
+        <path d="M13 53 Q17 57 23 55.5" stroke="#3f3a34" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-bee">
+        <g stroke="#3f3a34" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="46" cy="25" rx="17" ry="10" fill="#cfe8ff" transform="rotate(-18 46 25)"/>
+          <ellipse cx="65" cy="28" rx="13" ry="8" fill="#cfe8ff" transform="rotate(16 65 28)"/>
+          <ellipse cx="55" cy="58" rx="27" ry="20" fill="#ffc93c"/>
+        </g>
+        <clipPath id="beeClip"><ellipse cx="55" cy="58" rx="27" ry="20"/></clipPath>
+        <g clip-path="url(#beeClip)">
+          <rect x="51" y="34" width="9" height="50" fill="#3f3a34"/>
+          <rect x="65" y="34" width="9" height="50" fill="#3f3a34"/>
+        </g>
+        <path d="M82 54 L93 58 L82 62 Z" fill="#3f3a34"/>
+        <g stroke="#3f3a34" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="26" cy="52" r="13" fill="#4a4a52"/>
+          <path d="M20 38 Q13 27 6 25" fill="none" stroke-width="3"/>
+          <path d="M31 36 Q31 22 24 15" fill="none" stroke-width="3"/>
+        </g>
+        <circle cx="7" cy="25" r="2.8" fill="#3f3a34"/><circle cx="24" cy="15" r="2.8" fill="#3f3a34"/>
+        <circle cx="22" cy="49" r="4" fill="#fff"/><circle cx="31" cy="48" r="4" fill="#fff"/>
+        <circle cx="22.5" cy="50" r="1.8" fill="#111"/><circle cx="31.5" cy="49" r="1.8" fill="#111"/>
+      </g>
+
+      <g id="s-hedgehog">
+        <path d="M20 72 L8 60 L22 52 L14 34 L32 38 L32 16 L46 30 L58 10 L66 30 L84 18 L82 38 L98 42 L86 54 L94 68 L76 74 L54 78 L34 78 Z"
+              fill="#8a5a33" stroke="#3f3a34" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M20 72 Q6 70 6 58 Q8 48 22 48 Q36 50 38 62 Q38 72 30 75 Q24 77 20 72 Z"
+              fill="#e8c39e" stroke="#3f3a34" stroke-width="4" stroke-linejoin="round"/>
+        <circle cx="10" cy="57" r="4.5" fill="#3f3a34"/>
+        <circle cx="26" cy="60" r="3" fill="#3f3a34"/>
+        <path d="M18 66 Q23 70 29 67" stroke="#3f3a34" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-fox">
+        <g stroke="#3f3a34" stroke-width="4" stroke-linejoin="round">
+          <path d="M16 8 L46 24 L20 44 Z" fill="#f97316"/>
+          <path d="M84 8 L54 24 L80 44 Z" fill="#f97316"/>
+          <path d="M50 88 L26 66 Q12 48 24 31 Q34 19 50 19 Q66 19 76 31 Q88 48 74 66 Z" fill="#f97316"/>
+        </g>
+        <path d="M23 15 L36 22 L26 31 Z" fill="#7c2d12"/>
+        <path d="M77 15 L64 22 L74 31 Z" fill="#7c2d12"/>
+        <circle cx="36" cy="62" r="13" fill="#fff7ed"/>
+        <circle cx="64" cy="62" r="13" fill="#fff7ed"/>
+        <ellipse cx="50" cy="56" rx="6.5" ry="5" fill="#3f3a34"/>
+        <path d="M50 61 L50 68 M50 68 Q44 74 38 70 M50 68 Q56 74 62 70"
+              stroke="#3f3a34" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="36" cy="42" r="4" fill="#3f3a34"/><circle cx="64" cy="42" r="4" fill="#3f3a34"/>
+      </g>
+
+      <g id="s-bear">
+        <circle cx="26" cy="26" r="13" fill="#8b5e3c" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="74" cy="26" r="13" fill="#8b5e3c" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="26" cy="26" r="5.5" fill="#d9b08c"/><circle cx="74" cy="26" r="5.5" fill="#d9b08c"/>
+        <circle cx="50" cy="54" r="30" fill="#8b5e3c" stroke="#3f3a34" stroke-width="4"/>
+        <ellipse cx="50" cy="66" rx="15" ry="11" fill="#e5c29f"/>
+        <ellipse cx="50" cy="61" rx="6" ry="4.5" fill="#3f3a34"/>
+        <path d="M50 65 L50 70 M50 70 Q44 76 39 72 M50 70 Q56 76 61 72"
+              stroke="#3f3a34" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="38" cy="46" r="4" fill="#3f3a34"/><circle cx="62" cy="46" r="4" fill="#3f3a34"/>
+      </g>
+
+      <g id="s-sheep">
+        <path d="M42 76 L42 91 M60 76 L60 91" stroke="#6b625c" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+        <g fill="#f7f3ea" stroke="#a89e8c" stroke-width="3">
+          <circle cx="27" cy="50" r="14"/><circle cx="37" cy="34" r="15"/><circle cx="54" cy="29" r="15"/>
+          <circle cx="70" cy="36" r="13"/><circle cx="77" cy="52" r="12"/><circle cx="68" cy="66" r="12"/>
+          <circle cx="50" cy="70" r="13"/><circle cx="33" cy="64" r="12"/><circle cx="50" cy="48" r="14"/>
+        </g>
+        <g stroke="#3f3a34" stroke-width="4" stroke-linejoin="round">
+          <ellipse cx="51" cy="56" rx="15" ry="13" fill="#6b625c"/>
+          <ellipse cx="37" cy="48" rx="8" ry="5" fill="#6b625c" transform="rotate(-28 37 48)"/>
+          <ellipse cx="65" cy="48" rx="8" ry="5" fill="#6b625c" transform="rotate(28 65 48)"/>
+        </g>
+        <circle cx="45" cy="54" r="3.2" fill="#fff"/><circle cx="57" cy="54" r="3.2" fill="#fff"/>
+        <circle cx="45.5" cy="55" r="1.5" fill="#111"/><circle cx="57.5" cy="55" r="1.5" fill="#111"/>
+        <path d="M46 63 Q51 67 56 63" stroke="#3f3a34" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-spider">
+        <g stroke="#3f3a34" stroke-width="4.5" stroke-linecap="round" fill="none">
+          <path d="M42 46 Q24 34 22 16"/><path d="M38 54 Q16 48 8 32"/>
+          <path d="M38 62 Q16 64 8 78"/><path d="M44 70 Q34 84 32 93"/>
+          <path d="M64 46 Q82 34 84 16"/><path d="M68 54 Q90 48 98 32"/>
+          <path d="M68 62 Q90 64 98 78"/><path d="M62 70 Q72 84 74 93"/>
+        </g>
+        <circle cx="54" cy="56" r="19" fill="#4b4b55" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="33" cy="52" r="12" fill="#5a5a66" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="29" cy="49" r="4" fill="#fff"/><circle cx="38" cy="48" r="4" fill="#fff"/>
+        <circle cx="29.5" cy="50" r="1.8" fill="#111"/><circle cx="38.5" cy="49" r="1.8" fill="#111"/>
+        <path d="M28 57 Q33 61 38 58" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-monkey">
+        <circle cx="18" cy="44" r="12" fill="#8a5a33" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="82" cy="44" r="12" fill="#8a5a33" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="18" cy="44" r="5" fill="#e8c39e"/><circle cx="82" cy="44" r="5" fill="#e8c39e"/>
+        <circle cx="50" cy="50" r="29" fill="#8a5a33" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="38" cy="46" r="10" fill="#e8c39e"/><circle cx="62" cy="46" r="10" fill="#e8c39e"/>
+        <ellipse cx="50" cy="61" rx="17" ry="12" fill="#e8c39e"/>
+        <circle cx="40" cy="44" r="3.5" fill="#3f3a34"/><circle cx="60" cy="44" r="3.5" fill="#3f3a34"/>
+        <circle cx="45" cy="60" r="1.8" fill="#3f3a34"/><circle cx="55" cy="60" r="1.8" fill="#3f3a34"/>
+        <path d="M42 67 Q50 74 58 67" stroke="#3f3a34" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M44 20 Q50 13 56 20" stroke="#3f3a34" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-stork">
+        <path d="M48 74 L42 92 M60 74 L64 92 M36 92 L48 92 M58 92 L70 92"
+              stroke="#e2574c" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <path d="M38 52 Q29 44 31 30" stroke="#3f3a34" stroke-width="15" fill="none" stroke-linecap="round"/>
+        <path d="M38 52 Q29 44 31 30" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <ellipse cx="56" cy="58" rx="24" ry="17" fill="#fff" stroke="#3f3a34" stroke-width="4"/>
+        <path d="M46 50 Q62 46 74 56 Q60 64 46 60 Z" fill="#3f3a34"/>
+        <circle cx="32" cy="26" r="10" fill="#fff" stroke="#3f3a34" stroke-width="4"/>
+        <path d="M23 24 L2 30 L23 33 Z" fill="#e2574c" stroke="#3f3a34" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="35" cy="23" r="2.4" fill="#3f3a34"/>
+      </g>
+
+      <g id="s-mouse">
+        <path d="M76 66 Q95 63 93 45 Q92 34 82 34" stroke="#b08968" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <circle cx="60" cy="31" r="11" fill="#878d94" stroke="#3f3a34" stroke-width="4"/>
+        <ellipse cx="52" cy="60" rx="27" ry="21" fill="#9aa0a6" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="36" cy="29" r="13" fill="#9aa0a6" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="36" cy="29" r="6.5" fill="#f3b6c2"/>
+        <circle cx="25" cy="56" r="4.5" fill="#f3b6c2" stroke="#3f3a34" stroke-width="3"/>
+        <circle cx="40" cy="52" r="3.5" fill="#3f3a34"/>
+        <path d="M27 59 L10 55 M27 62 L11 66" stroke="#3f3a34" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <path d="M31 65 Q35 68 39 66" stroke="#3f3a34" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-leaf">
+        <path d="M25 77 Q20 34 79 15 Q87 68 35 82 Q28 83 25 77 Z"
+              fill="#57a05a" stroke="#2f6b38" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M29 73 Q50 52 72 25" stroke="#2f6b38" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="M25 77 Q19 85 11 90" stroke="#2f6b38" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-flower">
+        <g fill="#ff7096" stroke="#3f3a34" stroke-width="3.5" stroke-linejoin="round">
+          <ellipse cx="50" cy="26" rx="12" ry="16"/>
+          <ellipse cx="50" cy="26" rx="12" ry="16" transform="rotate(60 50 50)"/>
+          <ellipse cx="50" cy="26" rx="12" ry="16" transform="rotate(120 50 50)"/>
+          <ellipse cx="50" cy="26" rx="12" ry="16" transform="rotate(180 50 50)"/>
+          <ellipse cx="50" cy="26" rx="12" ry="16" transform="rotate(240 50 50)"/>
+          <ellipse cx="50" cy="26" rx="12" ry="16" transform="rotate(300 50 50)"/>
+        </g>
+        <circle cx="50" cy="50" r="12.5" fill="#ffd54f" stroke="#c98f1b" stroke-width="3"/>
+      </g>
+
+      <g id="s-worm">
+        <path d="M24 80 Q33 56 54 60 Q77 64 78 44 Q78 30 66 28" stroke="#a85a3c" stroke-width="19" fill="none" stroke-linecap="round"/>
+        <path d="M24 80 Q33 56 54 60 Q77 64 78 44 Q78 30 66 28" stroke="#e0997a" stroke-width="12" fill="none" stroke-linecap="round"/>
+        <path d="M30 66 L37 71 M41 56 L48 60 M60 58 L61 68 M72 56 L79 52 M73 40 L81 40"
+              stroke="#a85a3c" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="62" cy="23" r="2.4" fill="#3f3a34"/><circle cx="70" cy="23" r="2.4" fill="#3f3a34"/>
+        <path d="M62 30 Q66 33 70 30" stroke="#3f3a34" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-chick">
+        <path d="M44 80 L42 92 M56 80 L58 92 M36 92 L47 92 M53 92 L64 92"
+              stroke="#e8912d" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <path d="M45 31 Q47 24 43 19 M50 31 Q50 22 50 17 M55 31 Q53 24 57 19"
+              stroke="#3f3a34" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="50" cy="56" r="25" fill="#ffd93b" stroke="#3f3a34" stroke-width="4"/>
+        <path d="M58 53 Q72 57 65 68 Q58 65 58 53 Z" fill="#f2c437" stroke="#3f3a34" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M27 52 L16 57 L27 62 Z" fill="#e8912d" stroke="#3f3a34" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="38" cy="47" r="3.5" fill="#3f3a34"/>
+        <circle cx="33" cy="58" r="4" fill="#ffb84d" opacity=".85"/>
+      </g>
+
+      <g id="s-honey">
+        <path d="M27 40 Q23 76 39 85 Q50 90 61 85 Q77 76 73 40 Z"
+              fill="#e8a33d" stroke="#3f3a34" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M24 38 Q30 30 36 37 Q42 29 50 36 Q58 29 64 37 Q70 30 76 38 L76 44 Q68 49 60 44 Q54 51 46 45 Q40 51 32 45 L24 44 Z"
+              fill="#f6c453" stroke="#3f3a34" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M50 76 C42 68 45 60 50 65 C55 60 58 68 50 76 Z"
+              fill="#fff3e0" stroke="#c9822a" stroke-width="2.5" stroke-linejoin="round"/>
+      </g>
+
+      <g id="s-grass" fill="none" stroke-linecap="round">
+        <path d="M22 88 Q17 74 23 62" stroke="#57a85b" stroke-width="6.5"/>
+        <path d="M33 88 Q25 60 33 38" stroke="#3f9142" stroke-width="7"/>
+        <path d="M45 88 Q41 50 49 30" stroke="#57a85b" stroke-width="7"/>
+        <path d="M57 88 Q61 52 53 32" stroke="#3f9142" stroke-width="7"/>
+        <path d="M69 88 Q77 62 69 44" stroke="#57a85b" stroke-width="6.5"/>
+        <path d="M79 88 Q85 74 81 62" stroke="#3f9142" stroke-width="6"/>
+      </g>
+
+      <g id="s-fly">
+        <ellipse cx="61" cy="27" rx="17" ry="9" fill="#dbe7f0" stroke="#8fa6b8" stroke-width="3" transform="rotate(18 61 27)"/>
+        <ellipse cx="42" cy="25" rx="14" ry="8" fill="#eef4f8" stroke="#8fa6b8" stroke-width="3" transform="rotate(-14 42 25)"/>
+        <ellipse cx="54" cy="58" rx="23" ry="18" fill="#8d99a6" stroke="#3f3a34" stroke-width="4"/>
+        <path d="M62 43 Q67 58 62 73 M72 48 Q76 58 72 68" stroke="#566270" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="54" r="13" fill="#6b7684" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="26" cy="50" r="5" fill="#c0392b"/><circle cx="35" cy="49" r="5" fill="#c0392b"/>
+        <circle cx="24.5" cy="48.5" r="1.5" fill="#fff"/><circle cx="33.5" cy="47.5" r="1.5" fill="#fff"/>
+        <path d="M46 76 L42 89 M56 77 L56 90 M66 74 L71 87" stroke="#3f3a34" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-banana">
+        <path d="M17 50 Q24 87 60 89 Q82 89 91 66 Q93 60 87 62 Q79 80 58 78 Q33 75 25 47 Q23 41 17 50 Z"
+              fill="#ffd93b" stroke="#3f3a34" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M30 60 Q40 76 62 80" stroke="#e0b422" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="19" cy="49" r="3.4" fill="#8a5a33"/><circle cx="88" cy="63" r="3.4" fill="#8a5a33"/>
+      </g>
+
+      <g id="s-frog">
+        <ellipse cx="50" cy="64" rx="33" ry="23" fill="#58b24a" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="31" cy="38" r="11" fill="#58b24a" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="69" cy="38" r="11" fill="#58b24a" stroke="#3f3a34" stroke-width="4"/>
+        <circle cx="31" cy="37" r="5.5" fill="#fff"/><circle cx="69" cy="37" r="5.5" fill="#fff"/>
+        <circle cx="31" cy="38" r="2.6" fill="#3f3a34"/><circle cx="69" cy="38" r="2.6" fill="#3f3a34"/>
+        <ellipse cx="50" cy="73" rx="19" ry="11" fill="#cdeab0"/>
+        <path d="M36 62 Q50 72 64 62" stroke="#2f6b38" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <circle cx="44" cy="55" r="1.8" fill="#2f6b38"/><circle cx="56" cy="55" r="1.8" fill="#2f6b38"/>
+        <path d="M26 83 Q21 92 31 92 M74 83 Q79 92 69 92" stroke="#3f3a34" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g id="s-cheese">
+        <path d="M10 70 L90 70 L90 32 Z" fill="#ffcf4d" stroke="#3f3a34" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M17 66 L85 37" stroke="#ffe08a" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="65" cy="60" r="7" fill="#e8a33d"/><circle cx="78" cy="45" r="4.5" fill="#e8a33d"/>
+        <circle cx="48" cy="64" r="4.5" fill="#e8a33d"/><circle cx="81" cy="58" r="3.5" fill="#e8a33d"/>
+      </g>
+
+      <g id="s-arrow">
+        <path d="M50 12 L84 54 L63 54 L63 90 L37 90 L37 54 L16 54 Z"
+              fill="#2e9e44" stroke="#1c7a33" stroke-width="3.5" stroke-linejoin="round"/>
+      </g>
+
+    </defs>
+
+    <g id="world" transform="translate(1.5,1.5)">
+      <path id="stub" fill="none" stroke="#ffc091" stroke-width="0.17" stroke-linecap="round" opacity="0.85"/>
+      <g id="gArrow"></g>
+      <path id="trail" fill="none" stroke="#ff7a1a" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="walls" fill="none" stroke="#2456d0" stroke-width="0.22" stroke-linecap="round"/>
+      <g id="gGoal"></g>
+      <g id="gAnimal"></g>
+    </g>
+  </svg>
+</main>
+
+<footer id="panel">
+  <div id="hint">Prilož prst na zvieratko a ťahaj s ním chodbami až k cieľu.</div>
+  <div id="winBox" hidden>
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="44" fill="#ffd93b" stroke="#e0a426" stroke-width="5"/>
+      <circle cx="36" cy="42" r="6" fill="#4e342e"/><circle cx="64" cy="42" r="6" fill="#4e342e"/>
+      <path d="M30 58 Q50 80 70 58" stroke="#4e342e" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <circle cx="26" cy="54" r="6" fill="#ffab91" opacity=".7"/><circle cx="74" cy="54" r="6" fill="#ffab91" opacity=".7"/>
+    </svg>
+    <div id="winText">VÝBORNE!</div>
+  </div>
+  <button id="nextBtn" type="button" hidden>ĎALŠIE BLUDISKO?</button>
+</footer>
+
+<script>
+'use strict';
+const N = 14, M = 1.5;
+const SVGNS = 'http://www.w3.org/2000/svg', XLINK = 'http://www.w3.org/1999/xlink';
+const $ = id => document.getElementById(id);
+const board = $('board'), wallsEl = $('walls'), trailEl = $('trail'), stubEl = $('stub'),
+      gArrow = $('gArrow'), gGoal = $('gGoal'), gAnimal = $('gAnimal'),
+      hintEl = $('hint'), winBox = $('winBox'), winText = $('winText'), nextBtn = $('nextBtn'),
+      counterEl = $('counter'), fsBtn = $('fsBtn');
+
+const TASKS = [
+  { a:'s-ant',      g:'s-leaf'   },
+  { a:'s-bee',      g:'s-flower' },
+  { a:'s-hedgehog', g:'s-worm'   },
+  { a:'s-fox',      g:'s-chick'  },
+  { a:'s-bear',     g:'s-honey'  },
+  { a:'s-sheep',    g:'s-grass'  },
+  { a:'s-spider',   g:'s-fly'    },
+  { a:'s-monkey',   g:'s-banana' },
+  { a:'s-stork',    g:'s-frog'   },
+  { a:'s-mouse',    g:'s-cheese' },
+];
+const CORNERS = { TL:[0,0], TR:[0,N-1], BL:[N-1,0], BR:[N-1,N-1] };
+const OPP = { TL:'BR', TR:'BL', BL:'TR', BR:'TL' };
+const ENTR = [['TL','N'],['BR','S'],['BL','W'],['TR','E'],['TL','W'],['BR','E'],['TR','N'],['BL','S'],['BL','E'],['TL','N']];
+
+/* ---------- generovanie bludísk (rovnaké dáta pre steny aj pre pohyb) ---------- */
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function genWalls(idx, attempt){
+  const rnd = mulberry32((1013904223 + idx * 7919 + attempt * 104729) | 0);
+  const H = Array.from({length:N+1}, () => Array(N).fill(true));   // H[r][c] = stena medzi (r-1,c) a (r,c)
+  const V = Array.from({length:N}, () => Array(N+1).fill(true));   // V[r][c] = stena medzi (r,c-1) a (r,c)
+  const [ck, side] = ENTR[idx];
+  const [sr, sc] = CORNERS[ck];
+  const seen = Array.from({length:N}, () => Array(N).fill(false));
+  const stack = [[sr, sc]];
+  seen[sr][sc] = true;
+  while (stack.length){
+    const cur = stack[stack.length-1];
+    const r = cur[0], c = cur[1];
+    const o = [];
+    if (r > 0     && !seen[r-1][c]) o.push([r-1, c, 0]);
+    if (r < N-1   && !seen[r+1][c]) o.push([r+1, c, 1]);
+    if (c > 0     && !seen[r][c-1]) o.push([r, c-1, 2]);
+    if (c < N-1   && !seen[r][c+1]) o.push([r, c+1, 3]);
+    if (!o.length){ stack.pop(); continue; }
+    const nxt = o[(rnd() * o.length) | 0];
+    if (nxt[2] === 0) H[r][c] = false; else if (nxt[2] === 1) H[r+1][c] = false;
+    else if (nxt[2] === 2) V[r][c] = false; else V[r][c+1] = false;
+    seen[nxt[0]][nxt[1]] = true;
+    stack.push([nxt[0], nxt[1]]);
+  }
+  // otvor vo vonkajšej stene pri zvierati
+  if (side === 'N') H[0][sc] = false; else if (side === 'S') H[N][sc] = false;
+  else if (side === 'W') V[sr][0] = false; else V[sr][N] = false;
+  return { H, V };
+}
+
+function bfs(H, V, sr, sc, gr, gc){
+  const prev = new Int16Array(N*N).fill(-1);
+  const seen = new Uint8Array(N*N);
+  const q = [sr*N + sc]; seen[sr*N + sc] = 1;
+  for (let h = 0; h < q.length; h++){
+    const cur = q[h], r = (cur / N) | 0, c = cur % N;
+    if (r === gr && c === gc){
+      const p = []; let x = cur;
+      while (x !== -1){ p.push({ r:(x/N)|0, c:x%N }); x = prev[x]; }
+      p.reverse(); return p;
+    }
+    const go = (nr, nc) => { const k = nr*N + nc; if (seen[k]) return; seen[k] = 1; prev[k] = cur; q.push(k); };
+    if (r > 0   && !H[r][c])   go(r-1, c);
+    if (r < N-1 && !H[r+1][c]) go(r+1, c);
+    if (c > 0   && !V[r][c])   go(r, c-1);
+    if (c < N-1 && !V[r][c+1]) go(r, c+1);
+  }
+  return null;
+}
+
+function makeMaze(idx){
+  const [ck, side] = ENTR[idx];
+  const [sr, sc] = CORNERS[ck];
+  const [gr, gc] = CORNERS[OPP[ck]];
+  for (let a = 0; a < 300; a++){
+    const { H, V } = genWalls(idx, a);
+    const sol = bfs(H, V, sr, sc, gr, gc);
+    if (!sol) continue;
+    let dead = 0, junc = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++){
+      let n = 0;
+      if (r > 0   && !H[r][c])   n++;
+      if (r < N-1 && !H[r+1][c]) n++;
+      if (c > 0   && !V[r][c])   n++;
+      if (c < N-1 && !V[r][c+1]) n++;
+      if (n === 1) dead++; else if (n >= 3) junc++;
+    }
+    if (sol.length >= 62 && sol.length <= 96 && dead >= 8 && junc >= 6){
+      return { H, V, sr, sc, gr, gc, side, corner: ck, sol, idx, attempt: a };
+    }
+  }
+  return null;
+}
+
+/* ---------- vykreslenie ---------- */
+
+let maze = null;
+let series = [0,1,2,3,4,5,6,7,8,9], pos = 0;
+let path = [], tail = null, drawing = false, solvedFlag = false, returning = false;
+let activePid = null, lastP = null, winTimer = 0;
+
+function el(name, attrs, parent){
+  const e = document.createElementNS(SVGNS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function useSym(id, cx, cy, size, rot, parent){
+  const u = el('use', { transform: 'translate(' + cx + ' ' + cy + ') rotate(' + (rot||0) + ') scale(' + (size/100) + ') translate(-50 -50)' }, parent);
+  u.setAttribute('href', '#' + id);
+  u.setAttributeNS(XLINK, 'xlink:href', '#' + id);
+  return u;
+}
+
+function render(){
+  let d = '';
+  for (let r = 0; r <= N; r++) for (let c = 0; c < N; c++) if (maze.H[r][c]) d += 'M' + c + ' ' + r + 'h1';
+  for (let r = 0; r < N; r++) for (let c = 0; c <= N; c++) if (maze.V[r][c]) d += 'M' + c + ' ' + r + 'v1';
+  wallsEl.setAttribute('d', d);
+
+  gArrow.textContent = ''; gGoal.textContent = ''; gAnimal.textContent = '';
+  const t = TASKS[maze.idx];
+  const sr = maze.sr, sc = maze.sc;
+
+  let ax, ay, sx2, sy2;
+  if (maze.side === 'N'){ ax = sc + 0.5; ay = -0.72;      sx2 = sc + 0.5;  sy2 = sr + 0.12; }
+  else if (maze.side === 'S'){ ax = sc + 0.5; ay = N + 0.72; sx2 = sc + 0.5; sy2 = sr - 0.12; }
+  else if (maze.side === 'W'){ ax = -0.72; ay = sr + 0.5;  sx2 = sc + 0.12; sy2 = sr + 0.5; }
+  else { ax = N + 0.72; ay = sr + 0.5;     sx2 = sc - 0.12; sy2 = sr + 0.5; }
+  stubEl.setAttribute('d', 'M' + ax + ' ' + ay + 'L' + sx2 + ' ' + sy2);
+
+  const rot = maze.side === 'N' ? 0 : maze.side === 'S' ? 180 : maze.side === 'W' ? -90 : 90;
+  useSym('s-arrow', sc + 0.5, sr + 0.5, 0.55, rot, gArrow);
+  useSym(t.g, maze.gc + 0.5, maze.gr + 0.5, 0.85, 0, gGoal);
+  useSym(t.a, ax, ay, 1.7, 0, gAnimal);
+}
+
+function drawTrail(){
+  if (!path.length){ trailEl.setAttribute('d', ''); return; }
+  let d = 'M' + (path[0].c + 0.5) + ' ' + (path[0].r + 0.5);
+  for (let i = 1; i < path.length; i++) d += 'L' + (path[i].c + 0.5) + ' ' + (path[i].r + 0.5);
+  if (tail) d += 'L' + tail.x.toFixed(3) + ' ' + tail.y.toFixed(3);
+  else if (path.length === 1) d += 'l0.001 0';
+  trailEl.setAttribute('d', d);
+}
+
+/* ---------- priebeh hry ---------- */
+
+function loadMaze(){
+  clearTimeout(winTimer);
+  maze = makeMaze(series[pos]);
+  path = [{ r: maze.sr, c: maze.sc }];
+  tail = null; drawing = false; solvedFlag = false; returning = false; activePid = null; lastP = null;
+  counterEl.textContent = 'BLUDISKO ' + (pos + 1) + '/10';
+  hintEl.hidden = false; winBox.hidden = true; nextBtn.hidden = true;
+  winText.classList.remove('final');
+  render(); drawTrail();
+}
+
+function win(){
+  solvedFlag = true; drawing = false; tail = null; drawTrail();
+  hintEl.hidden = true;
+  const last = pos === series.length - 1;
+  winText.textContent = last ? 'ZVLÁDOL/ZVLÁDLA SI VŠETKY BLUDISKÁ!' : 'VÝBORNE!';
+  winText.classList.toggle('final', last);
+  winBox.hidden = false;
+  chime();
+  winTimer = setTimeout(function(){
+    nextBtn.textContent = last ? 'HRAŤ ZNOVA' : 'ĎALŠIE BLUDISKO?';
+    nextBtn.hidden = false;
+  }, 3000);
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+nextBtn.addEventListener('click', function(){
+  if (pos < series.length - 1) pos++;
+  else { series = shuffle([0,1,2,3,4,5,6,7,8,9]); pos = 0; }
+  loadMaze();
+});
+
+/* ---------- jemný zvukový signál pri úspechu ---------- */
+
+let AC = null;
+function chime(){
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const t = AC.currentTime;
+    [[660, 0], [880, 0.13]].forEach(function(nd){
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine'; o.frequency.value = nd[0];
+      g.gain.setValueAtTime(0.0001, t + nd[1]);
+      g.gain.exponentialRampToValueAtTime(0.16, t + nd[1] + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + nd[1] + 0.38);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t + nd[1]); o.stop(t + nd[1] + 0.45);
+    });
+  } catch (e) {}
+}
+
+/* ---------- kreslenie cesty prstom ---------- */
+
+function toLocal(e){
+  const ct = board.getScreenCTM();
+  if (!ct) return null;
+  const pt = board.createSVGPoint();
+  pt.x = e.clientX; pt.y = e.clientY;
+  const q = pt.matrixTransform(ct.inverse());
+  return { x: q.x - M, y: q.y - M };
+}
+function cellAt(p){
+  const c = Math.floor(p.x), r = Math.floor(p.y);
+  return (r >= 0 && r < N && c >= 0 && c < N) ? { r: r, c: c } : null;
+}
+function openEdge(a, b){
+  if (b.r === a.r - 1) return !maze.H[a.r][a.c];
+  if (b.r === a.r + 1) return !maze.H[a.r+1][a.c];
+  if (b.c === a.c - 1) return !maze.V[a.r][a.c];
+  if (b.c === a.c + 1) return !maze.V[a.r][a.c+1];
+  return false;
+}
+
+function processPoint(p){
+  if (solvedFlag) return;
+  const cell = cellAt(p);
+  if (!cell) return;
+  const end = path[path.length - 1];
+  if (cell.r === end.r && cell.c === end.c){
+    tail = { x: p.x, y: p.y }; returning = false; drawTrail(); return;
+  }
+  if (path.length >= 2){
+    const prev = path[path.length - 2];
+    if (cell.r === prev.r && cell.c === prev.c){
+      path.pop(); tail = { x: p.x, y: p.y }; returning = true; drawTrail(); return;
+    }
+  }
+  if (returning) return;
+  const dr = cell.r - end.r, dc = cell.c - end.c;
+  if (Math.abs(dr) + Math.abs(dc) === 1 && openEdge(end, cell)){
+    path.push({ r: cell.r, c: cell.c });
+    tail = { x: p.x, y: p.y }; drawTrail();
+    if (cell.r === maze.gr && cell.c === maze.gc) win();
+  }
+}
+
+function sweep(a, b){
+  const d = Math.hypot(b.x - a.x, b.y - a.y);
+  const steps = Math.max(1, Math.ceil(d / 0.3));
+  for (let i = 1; i <= steps; i++){
+    processPoint({ x: a.x + (b.x - a.x) * i / steps, y: a.y + (b.y - a.y) * i / steps });
+    if (solvedFlag) return;
+  }
+}
+
+board.addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  if (solvedFlag || activePid !== null) return;
+  const p = toLocal(e);
+  if (!p) return;
+  const end = path[path.length - 1];
+  const sc0 = { x: maze.sc + 0.5, y: maze.sr + 0.5 };
+  const ec0 = { x: end.c + 0.5, y: end.r + 0.5 };
+  const ok = path.length === 1
+    ? Math.hypot(p.x - sc0.x, p.y - sc0.y) <= 1.6
+    : Math.hypot(p.x - ec0.x, p.y - ec0.y) <= 0.95;
+  if (!ok) return;
+  activePid = e.pointerId;
+  try { board.setPointerCapture(e.pointerId); } catch (err) {}
+  drawing = true; returning = false; lastP = p;
+  hintEl.hidden = true;
+  processPoint(p);
+});
+board.addEventListener('pointermove', function(e){
+  if (!drawing || e.pointerId !== activePid || solvedFlag) return;
+  e.preventDefault();
+  const p = toLocal(e);
+  if (!p) return;
+  sweep(lastP, p);
+  lastP = p;
+});
+function endStroke(e){
+  if (e.pointerId !== activePid) return;
+  drawing = false; activePid = null; tail = null; lastP = null;
+  drawTrail();
+}
+board.addEventListener('pointerup', endStroke);
+board.addEventListener('pointercancel', endStroke);
+board.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+/* ---------- celá obrazovka ---------- */
+
+const fsElem = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+if (!fsElem || (document.fullscreenEnabled === false || document.webkitFullscreenEnabled === false)){
+  fsBtn.hidden = true;
+}
+fsBtn.addEventListener('click', function(){
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement){
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      fsElem.call(document.documentElement);
+    }
+  } catch (err) {}
+});
+function fsLabel(){
+  fsBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? 'UKONČIŤ' : 'CELÁ OBRAZOVKA';
+}
+document.addEventListener('fullscreenchange', fsLabel);
+document.addEventListener('webkitfullscreenchange', fsLabel);
+
+/* ---------- štart + testovací hook ---------- */
+
+loadMaze();
+
+window.__DBG = {
+  get maze(){ return maze; },
+  get path(){ return path.slice(); },
+  get solved(){ return solvedFlag; },
+  get series(){ return series.slice(); },
+  get pos(){ return pos; },
+  setPos: function(p){ pos = p; loadMaze(); },
+  localToClient: function(x, y){
+    const ct = board.getScreenCTM();
+    const pt = board.createSVGPoint();
+    pt.x = x + M; pt.y = y + M;
+    const q = pt.matrixTransform(ct);
+    return { x: q.x, y: q.y };
+  }
+};
+</script>
+</body>
+</html>
